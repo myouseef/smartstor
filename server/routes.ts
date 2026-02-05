@@ -36,7 +36,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/products", async (req: Request, res: Response) => {
     try {
-      const product = await storage.createProduct(req.body);
+      const data = {
+        ...req.body,
+        originalPrice: req.body.originalPrice || null,
+        nameAr: req.body.nameAr || null,
+        description: req.body.description || null,
+        descriptionAr: req.body.descriptionAr || null,
+        offer: req.body.offer || null,
+        images: req.body.images || null,
+      };
+      const product = await storage.createProduct(data);
       res.status(201).json(product);
     } catch (error) {
       console.error("Error creating product:", error);
@@ -47,7 +56,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const product = await storage.updateProduct(id, req.body);
+      const data = {
+        ...req.body,
+        originalPrice: req.body.originalPrice || null,
+        nameAr: req.body.nameAr || null,
+        description: req.body.description || null,
+        descriptionAr: req.body.descriptionAr || null,
+        offer: req.body.offer || null,
+        images: req.body.images || null,
+      };
+      const product = await storage.updateProduct(id, data);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, TextInput, Modal, Alert } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable, Platform, ActivityIndicator, TextInput, Modal, Alert, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { Colors } from "@/constants/colors";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -17,10 +19,47 @@ interface Product {
   descriptionAr: string | null;
   price: string;
   originalPrice: string | null;
-  image: string | null;
+  images: string | null;
   offer: string | null;
   status: string;
   createdAt: string;
+}
+
+function parseImages(imagesJson: string | null): string[] {
+  if (!imagesJson) return [];
+  try {
+    return JSON.parse(imagesJson);
+  } catch {
+    return [];
+  }
+}
+
+function ProductImageGallery({ images, isRTL }: { images: string[]; isRTL: boolean }) {
+  if (images.length === 0) {
+    return (
+      <View style={styles.productIcon}>
+        <Ionicons name="cube" size={24} color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (images.length === 1) {
+    return (
+      <Image source={{ uri: images[0] }} style={styles.singleImage} contentFit="cover" />
+    );
+  }
+
+  return (
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[styles.imageGallery, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+    >
+      {images.map((uri, index) => (
+        <Image key={index} source={{ uri }} style={styles.galleryImage} contentFit="cover" />
+      ))}
+    </ScrollView>
+  );
 }
 
 function ProductCard({ 
@@ -35,14 +74,27 @@ function ProductCard({
   onDelete: () => void;
 }) {
   const { t } = useLanguage();
+  const images = parseImages(product.images);
   
   return (
     <View style={styles.productCard}>
-      <View style={[styles.productHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <View style={styles.productIcon}>
-          <Ionicons name="cube" size={24} color={Colors.primary} />
+      {images.length > 0 && (
+        <View style={styles.imageContainer}>
+          <ProductImageGallery images={images} isRTL={isRTL} />
+          <View style={styles.imageCount}>
+            <Ionicons name="images" size={12} color={Colors.text} />
+            <Text style={styles.imageCountText}>{images.length}</Text>
+          </View>
         </View>
-        <View style={[styles.productInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start', marginLeft: isRTL ? 0 : 12, marginRight: isRTL ? 12 : 0 }]}>
+      )}
+      
+      <View style={[styles.productHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {images.length === 0 && (
+          <View style={styles.productIcon}>
+            <Ionicons name="cube" size={24} color={Colors.primary} />
+          </View>
+        )}
+        <View style={[styles.productInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start', marginLeft: isRTL || images.length > 0 ? 0 : 12, marginRight: isRTL && images.length === 0 ? 12 : 0 }]}>
           <Text style={[styles.productName, { fontFamily: isRTL ? 'Cairo_600SemiBold' : 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {isRTL && product.nameAr ? product.nameAr : product.name}
           </Text>
@@ -90,6 +142,7 @@ export default function ProductsScreen() {
   const { t, isRTL, language } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     nameAr: '',
@@ -106,29 +159,35 @@ export default function ProductsScreen() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData & { images: string }) => {
       const res = await apiRequest('POST', '/api/products', data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
       setModalVisible(false);
       resetForm();
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to create product');
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: typeof formData }) => {
+    mutationFn: async ({ id, data }: { id: number; data: typeof formData & { images: string } }) => {
       const res = await apiRequest('PUT', `/api/products/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       setModalVisible(false);
       resetForm();
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to update product');
     },
   });
 
@@ -154,6 +213,7 @@ export default function ProductsScreen() {
       offer: '',
       status: 'active',
     });
+    setSelectedImages([]);
     setEditingProduct(null);
   };
 
@@ -169,6 +229,7 @@ export default function ProductsScreen() {
       offer: product.offer || '',
       status: product.status,
     });
+    setSelectedImages(parseImages(product.images));
     setModalVisible(true);
   };
 
@@ -183,15 +244,40 @@ export default function ProductsScreen() {
     );
   };
 
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 10,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newImages = result.assets.map(asset => asset.uri);
+      setSelectedImages(prev => [...prev, ...newImages].slice(0, 10));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handleSave = () => {
     if (!formData.name || !formData.price) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
+    const dataWithImages = {
+      ...formData,
+      images: JSON.stringify(selectedImages),
+    };
+    
     if (editingProduct) {
-      updateMutation.mutate({ id: editingProduct.id, data: formData });
+      updateMutation.mutate({ id: editingProduct.id, data: dataWithImages });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataWithImages);
     }
   };
 
@@ -272,6 +358,34 @@ export default function ProductsScreen() {
             </View>
             
             <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+              <Text style={[styles.inputLabel, { fontFamily: isRTL ? 'Cairo_600SemiBold' : 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                {language === 'ar' ? 'الصور' : 'Images'} ({selectedImages.length}/10)
+              </Text>
+              
+              <View style={styles.imagesSection}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[styles.imagesContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <Pressable style={styles.addImageButton} onPress={pickImages}>
+                    <Ionicons name="add-circle-outline" size={32} color={Colors.primary} />
+                    <Text style={[styles.addImageText, { fontFamily: isRTL ? 'Cairo_400Regular' : 'Inter_400Regular' }]}>
+                      {language === 'ar' ? 'إضافة' : 'Add'}
+                    </Text>
+                  </Pressable>
+                  
+                  {selectedImages.map((uri, index) => (
+                    <View key={index} style={styles.imagePreviewContainer}>
+                      <Image source={{ uri }} style={styles.imagePreview} contentFit="cover" />
+                      <Pressable style={styles.removeImageButton} onPress={() => removeImage(index)}>
+                        <Ionicons name="close-circle" size={22} color={Colors.error} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+
               <Text style={[styles.inputLabel, { fontFamily: isRTL ? 'Cairo_600SemiBold' : 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t.name} (EN)</Text>
               <TextInput
                 style={[styles.input, { fontFamily: isRTL ? 'Cairo_400Regular' : 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
@@ -421,6 +535,41 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
+  imageContainer: {
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  singleImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+  },
+  imageGallery: {
+    gap: 8,
+  },
+  galleryImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 10,
+  },
+  imageCount: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  imageCountText: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   productHeader: {
     alignItems: 'center',
     marginBottom: 12,
@@ -538,7 +687,45 @@ const styles = StyleSheet.create({
   },
   formScroll: {
     padding: 20,
-    maxHeight: 400,
+    maxHeight: 450,
+  },
+  imagesSection: {
+    marginBottom: 8,
+  },
+  imagesContainer: {
+    gap: 10,
+    paddingVertical: 8,
+  },
+  addImageButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+  },
+  addImageText: {
+    fontSize: 12,
+    color: Colors.primary,
+    marginTop: 4,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: Colors.surface,
+    borderRadius: 11,
   },
   inputLabel: {
     fontSize: 13,

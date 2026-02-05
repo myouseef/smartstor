@@ -27,7 +27,7 @@ export const products = pgTable("products", {
   descriptionAr: text("description_ar"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
-  image: text("image"),
+  images: text("images"),
   offer: text("offer"),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
