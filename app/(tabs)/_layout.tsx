@@ -1,71 +1,97 @@
-// template
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { Platform, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
-import { SymbolView } from "expo-symbols";
-import { Platform, StyleSheet, useColorScheme } from "react-native";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import React from "react";
+import { Colors } from "@/constants/colors";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
-
-//IMPORTANT: iOS 26 Exists, feel free to use NativeTabs for native tabs with liquid glass support.
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
-
-function ClassicTabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+export default function TabLayout() {
+  const { t, isRTL } = useLanguage();
+  const insets = useSafeAreaInsets();
+  
+  const tabBarHeight = 60 + (Platform.OS === 'web' ? 34 : insets.bottom);
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.tint,
-        tabBarInactiveTintColor: Colors.light.tabIconDefault,
-        headerShown: true,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
+        headerShown: false,
         tabBarStyle: {
           position: "absolute",
           backgroundColor: Platform.select({
             ios: "transparent",
-            android: isDark ? "#000" : "#fff",
+            android: Colors.surface,
+            web: Colors.surface,
           }),
-          borderTopWidth: 0,
-          elevation: 0,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
+          height: tabBarHeight,
+          paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom,
+          paddingTop: 8,
         },
         tabBarBackground: () =>
           Platform.OS === "ios" ? (
             <BlurView
               intensity={100}
-              tint={isDark ? "dark" : "light"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : null,
+        tabBarLabelStyle: {
+          fontFamily: isRTL ? 'Cairo_600SemiBold' : 'Inter_500Medium',
+          fontSize: 11,
+          marginTop: 2,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name="house" tintColor={color} size={24} />
+          title: t.dashboard,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="grid-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="products"
+        options={{
+          title: t.products,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cube-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leads"
+        options={{
+          title: t.leads,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai-tools"
+        options={{
+          title: t.aiTools,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: t.settings,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="settings" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
   );
-}
-
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
 }
