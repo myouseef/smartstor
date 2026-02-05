@@ -1,0 +1,254 @@
+You are a senior SaaS architect and WordPress platform engineer.
+
+Your task is to build a full multi-tenant SaaS platform named:
+
+TagerPro
+
+Language support:
+Arabic + English (RTL + LTR)
+
+The platform is a marketing and promotion SaaS for merchants.
+
+Each merchant gets:
+
+* dashboard
+* landing pages
+* products
+* leads
+* analytics
+* WhatsApp automation
+* AI marketing tools
+* subdomain or custom domain
+
+Build this using:
+
+WordPress Multisite
+Custom Plugin
+Custom Dashboard inside wp-admin
+Modern UI
+Scalable SaaS architecture
+
+====================================================
+SYSTEM OVERVIEW
+===============
+
+Platform name: TagerPro
+
+Type: Multi-tenant SaaS
+
+Super Admin controls:
+all merchants
+subscriptions
+domains
+analytics
+
+Each merchant has isolated data.
+
+====================================================
+TECH STACK
+==========
+
+WordPress Multisite
+Custom Plugin: tagerpro-core
+ACF Pro structure (simulate with custom fields)
+REST API
+Tailwind dashboard UI
+JWT login for dashboard
+MySQL
+
+====================================================
+MULTISITE STRUCTURE
+===================
+
+Main site:
+admin.tagerpro.com
+
+Merchant sites:
+merchantname.tagerpro.com
+
+Also allow custom domains.
+
+====================================================
+SUPER ADMIN FEATURES
+====================
+
+Admin dashboard page:
+
+* total merchants
+* total leads
+* total pages
+* active plans
+
+Merchant manager:
+
+* create merchant
+* suspend merchant
+* assign plan
+
+Subscription plans:
+Basic
+Pro
+Agency
+
+====================================================
+MERCHANT DASHBOARD
+==================
+
+Custom dashboard inside wp-admin.
+
+Menu:
+Dashboard
+Products
+Landing Pages
+Leads
+Campaigns
+Analytics
+AI Tools
+Settings
+
+====================================================
+PRODUCT SYSTEM
+==============
+
+Custom post type: tp_product
+
+Fields:
+price
+image
+description
+offer
+status
+
+====================================================
+LANDING PAGE BUILDER
+====================
+
+Each product can generate landing page.
+
+Landing page includes:
+hero
+product info
+CTA
+WhatsApp button
+lead form
+
+URL:
+merchantdomain.com/p/product-slug
+
+====================================================
+LEADS SYSTEM
+============
+
+Custom post type: tp_lead
+
+Fields:
+name
+phone
+product
+source
+status
+notes
+
+When lead created:
+store in database
+trigger WhatsApp
+
+====================================================
+WHATSAPP AUTOMATION
+===================
+
+Create service class:
+
+send_message(phone, message)
+
+Allow integration with:
+CallMeBot
+Twilio
+WhatsApp Cloud API
+
+Trigger when new lead added.
+
+====================================================
+AI TOOLS
+========
+
+Connect to OpenAI API.
+
+Features:
+generate product description
+generate ad copy
+suggest price
+campaign ideas
+
+Add AI Tools page in dashboard.
+
+====================================================
+ANALYTICS
+=========
+
+Track:
+visits
+leads
+conversion
+
+Dashboard widgets.
+
+====================================================
+DOMAIN SYSTEM
+=============
+
+Allow:
+subdomain per merchant
+custom domain mapping
+
+====================================================
+UI REQUIREMENTS
+===============
+
+Modern SaaS dashboard.
+Arabic RTL support.
+English support.
+Responsive.
+
+====================================================
+PLUGIN STRUCTURE
+================
+
+Create plugin:
+tagerpro-core
+
+Folders:
+admin
+merchant
+api
+ai
+whatsapp
+analytics
+
+====================================================
+DELIVERABLES
+============
+
+1. Full plugin code
+2. Multisite setup guide
+3. Database schema
+4. Example merchant
+5. Demo landing page
+6. AI integration
+7. WhatsApp integration
+
+====================================================
+OUTPUT
+======
+
+Generate code step by step.
+
+Start with:
+plugin structure
+database tables
+dashboard UI
+then features.
+
+Ensure code runs on Replit WordPress environment.
+
+Begin building TagerPro now.
